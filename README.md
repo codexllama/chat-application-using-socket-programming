@@ -18,7 +18,7 @@ A real-time chat application built using socket programming concepts from comput
 
 2. Technical Implementation
    
-     ❌ TCP socket communication
+     ⚠️ TCP socket communication (handled via WebSockets using Socket.IO, not raw TCP sockets)
 
      ✅ Multi-threaded server handling
 
@@ -28,61 +28,66 @@ A real-time chat application built using socket programming concepts from comput
 
 🛠️ Technical Details
 
+
 File Structure
 
-chat-application/
+chat-application-using-socket-programming/
+   ├── index.js               # Node.js chat server (Express + Socket.IO)
+   ├── index.html             # Chat client web interface
+   ├── package.json           # Node.js dependencies
+   └── README.md              # This documentation
 
-  ├── server.py              # Multi-threaded chat server
-
-  ├── client.py              # Chat client application
-
-  ├── requirements.txt       # Python dependencies
-
-  └── README.md             # This documentation
 
 Technologies Used
 
-  Python 3.x: Core programming language
+   Node.js: Core programming language
+   Express: Web server framework
+   Socket.IO: Real-time communication
+   JavaScript/HTML/CSS: Client interface
 
-  Socket Programming: TCP sockets for communication
-
-  Threading: Concurrent client handling
-
-  Network Protocols: TCP/IP stack implementation
 
 🚀 Installation & Setup
 
 Prerequisites
+   - Node.js 12 or higher
+   - Network connectivity
+   - All users (clients) and the server must be on the same WiFi network or mobile hotspot
+   - Firewall on server system must allow incoming connections on port 3000
 
-   Python 3.6 or higher
-
-   Network connectivity
-
-   Same network for server and clients (or port forwarding)
 
 🔧 Usage Instructions
 
-   Server Commands:
+1. Start the server:
+   - Open a terminal in the project folder
+   - Run: `npm install`
+   - Run: `node index.js`
+   - The server will listen on port 3000
 
-   Ctrl+C to shutdown server gracefully
+2. Find your server's local IP address:
+   - On Windows, run `ipconfig` and look for "IPv4 Address" under your active network adapter
+   - Example: `192.168.1.5`
 
-   Server logs all activities and connections
+3. Connect clients:
+   - On any device in the same network, open a browser and go to: `http://<server-ip>:3000`
+   - Example: `http://192.168.1.5:3000`
 
-Client Commands:
+4. Chat:
+   - Enter a username when prompted
+   - Type messages and press Enter to send
+   - Messages sent by you appear on the right; messages from others appear on the left with their username
+   - See when other users join/leave
 
-   Type messages and press Enter to send
-
-   See when other users join/leave
+5. Stop the server:
+   - Press Ctrl+C in the server terminal
 
 🌟 Key Computer Network Concepts Demonstrated
 
+
    1. Socket Programming
    
-   TCP socket creation and binding
-
+   WebSocket creation and binding (via Socket.IO)
    Socket listening and acceptance
-
-   Data transmission via sockets
+   Data transmission via WebSockets
 
 2. Client-Server Model
    
@@ -92,12 +97,11 @@ Client Commands:
 
    Request-response pattern
 
+
 3. Concurrent Processing
    
-   Thread-per-client model
-
-   Synchronous communication
-
+   Event-driven concurrency (Node.js event loop)
+   Synchronous/asynchronous communication
    Resource sharing management
 
 4. Network Protocols
