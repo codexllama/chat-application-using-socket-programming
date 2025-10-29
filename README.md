@@ -18,7 +18,7 @@ A real-time chat application built using socket programming concepts from comput
 
 2. Technical Implementation
    
-     ❌ TCP socket communication
+     ⚠️ TCP socket communication (handled via WebSockets using Socket.IO, not raw TCP sockets)
 
      ✅ Multi-threaded server handling
 
