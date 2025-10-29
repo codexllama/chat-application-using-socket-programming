@@ -8,65 +8,82 @@ const fs = require('fs');
 
 app.use('/public', express.static('public'))
 
-app.get('/', (req, res) =>  {
-  res.sendFile(__dirname + '/'); 
+
+// Serve the main chat interface
+app.get('/', (req, res) => {
+	res.sendFile(__dirname + '/index.html');
 });
 
 
-// usernames which are currently connected to the chat
+
+// Track connected usernames and their socket IDs
 let usernames = {};
 
-const check_key = v =>{
-	let val = '';	
-	for(let key in usernames){
-		if(usernames[key] == v)	val = key;
-	}
-	return val;
-}
+// Helper to find username by socket ID
+const check_key = v => {
+  for (const key in usernames) {
+    if (usernames[key] === v) return key;
+  }
+  return '';
+};
 
-io.on('connection',  socket => {
-	// when the client emits 'sendchat', this listens and executes
-	socket.on('sendchat', data => io.emit('updatechat', socket.username, data));
 
-	// when the client emits 'adduser', this listens and executes
+// Socket.IO connection handler
+io.on('connection', socket => {
+	// Broadcast chat messages
+	socket.on('sendchat', data => {
+		if (socket.username) {
+			io.emit('updatechat', socket.username, data);
+		} else {
+			socket.emit('updatechat', 'Chat Bot', 'Error: Username not set.');
+		}
+	});
+
+	// Add new user
 	socket.on('adduser', username => {
-		// we store the username in the socket session for this client
+		if (!username || typeof username !== 'string') {
+			socket.emit('updatechat', 'Chat Bot', 'Error: Invalid username.');
+			return;
+		}
 		socket.username = username;
-		// add the client's username to the global list
 		usernames[username] = socket.id;
-		// echo to client they've connected
-		//socket.emit('updatechat', 'Chat Bot', socket.username + ' you have joined the chat');
 		socket.emit('updatechat', 'Chat Bot', `${socket.username} you have joined the chat`);
-		// echo to client their username
 		socket.emit('store_username', username);
-		// echo globally (all clients) that a person has connected
-		//socket.broadcast.emit('updatechat', 'Chat Bot', `${username} has connected`);
+		socket.broadcast.emit('updatechat', 'Chat Bot', `${username} has connected`);
 	});
 
-	// when the user disconnects.. perform this
-	socket.on('disconnect', () => {
-		// remove the username from global usernames list
-		delete usernames[socket.username];
-		// echo globally that this client has left
-		//socket.broadcast.emit('updatechat', 'Chat Bot', `${socket.username} has left chat`);
+		// Remove user on disconnect
+		socket.on('disconnect', () => {
+			if (socket.username) {
+				delete usernames[socket.username];
+				socket.broadcast.emit('updatechat', 'Chat Bot', `${socket.username} has left chat`);
+			}
+		});
+
+	// Private messaging: find username by socket ID
+	socket.on('check_user', (asker, id) => {
+		if (usernames[asker]) {
+			io.to(usernames[asker]).emit('msg_user_found', check_key(id));
+		} else {
+			socket.emit('updatechat', 'Chat Bot', 'Error: User not found.');
+		}
 	});
-	
-	// when the user sends a private msg to a user id, first find the username
-	socket.on('check_user', (asker, id) => io.to(usernames[asker]).emit('msg_user_found', check_key(id)));
-	
-	// when the user sends a private message to a user.. perform this
+
+	// Private messaging: send message to user
 	socket.on('msg_user', (to_user, from_user, msg) => {
-		//emits 'msg_user_handle', this updates the chat body on client-side
-		io.to(usernames[to_user]).emit('msg_user_handle', from_user, msg);
-		//write the chat message to a txt file		
-		const wstream = fs.createWriteStream('chat_data.txt');		
-		wstream.write(msg);
-		wstream.write('\r\n');
-		wstream.end();
-		
+		if (usernames[to_user]) {
+			io.to(usernames[to_user]).emit('msg_user_handle', from_user, msg);
+			// Append chat message to file (basic persistence)
+			fs.appendFile('chat_data.txt', `${from_user}: ${msg}\r\n`, err => {
+				if (err) console.error('Error writing chat message:', err);
+			});
+		} else {
+			socket.emit('updatechat', 'Chat Bot', 'Error: Recipient not found.');
+		}
 	});
 
-
+	// Future scalability: consider using Redis or database for user/session management
+	// and clustering Socket.IO for horizontal scaling.
 });
 
 http.listen(3000, () => console.log('listening on *:3000'));
